@@ -1,0 +1,62 @@
+{
+  "the-camden-rouge": {
+    "name": "The Camden Rouge",
+    "price_cents": 15000,
+    "image": "https://cdn.shopify.com/s/files/1/0970/4882/2041/files/The-camden-cardinal-1.webp?v=1765570911",
+    "product_url": "/products/the-camden-rouge.html"
+  },
+  "the-camden-ivory": {
+    "name": "The Camden Ivory",
+    "price_cents": 15000,
+    "image": "https://cdn.shopify.com/s/files/1/0970/4882/2041/files/the-ivory-camden-1.webp?v=1765570592",
+    "product_url": "/products/the-camden-ivory.html"
+  },
+  "the-noir-camden-gold": {
+    "name": "The Noir Camden Gold",
+    "price_cents": 15000,
+    "image": "https://cdn.shopify.com/s/files/1/0970/4882/2041/files/the-noir_camden-gold-1.webp?v=1765570466",
+    "product_url": "/products/the-noir-camden-gold.html"
+  },
+  "camden-mesh-blanc": {
+    "name": "Camden Mesh Blanc",
+    "price_cents": 7500,
+    "image": "https://cdn.shopify.com/s/files/1/0970/4882/2041/files/Camden_Mesh_Blanc-1.webp?v=1765571572",
+    "product_url": "/products/camden-mesh-blanc.html"
+  },
+  "camden-mesh-rouge": {
+    "name": "Camden Mesh Rouge",
+    "price_cents": 7500,
+    "image": "https://cdn.shopify.com/s/files/1/0970/4882/2041/files/Camden_Mesh_Rouge-1.webp?v=1765571650",
+    "product_url": "/products/camden-mesh-rouge.html"
+  },
+  "noir-ascendant": {
+    "name": "Noir Ascendant",
+    "price_cents": 7500,
+    "image": "https://cdn.shopify.com/s/files/1/0970/4882/2041/files/Noir_Ascendant-1.webp?v=1765571498",
+    "product_url": "/products/noir-ascendant.html"
+  },
+  "blanc-ascendant": {
+    "name": "Blanc Ascendant",
+    "price_cents": 7500,
+    "image": "https://cdn.shopify.com/s/files/1/0970/4882/2041/files/blanc_Ascendant-1.webp?v=1765571435",
+    "product_url": "/products/blanc-ascendant.html"
+  },
+  "camden-graphite-knit": {
+    "name": "Camden Graphite Knit",
+    "price_cents": 6500,
+    "image": "https://cdn.shopify.com/s/files/1/0970/4882/2041/files/Camden_Graphite_Knit-1.webp?v=1765572362",
+    "product_url": "/products/camden-graphite-knit.html"
+  },
+  "camden-rouge-knit": {
+    "name": "Camden Rouge Knit",
+    "price_cents": 6500,
+    "image": "https://cdn.shopify.com/s/files/1/0970/4882/2041/files/Camden_Rouge_Knit-1.webp?v=1765572336",
+    "product_url": "/products/camden-rouge-knit.html"
+  },
+  "boxer-briefs": {
+    "name": "Boxer Briefs",
+    "price_cents": 4500,
+    "image": "https://cdn.shopify.com/s/files/1/0970/4882/2041/files/jh-briefs-1.webp?v=1765572602",
+    "product_url": "/products/underwear.html"
+  }
+}
