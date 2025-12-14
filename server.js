@@ -48,14 +48,9 @@ const allowed = (process.env.ALLOWED_ORIGINS || SITE_URL || "")
   .map(s => s.trim())
   .filter(Boolean);
 
-app.use(cors({
-  origin: function(origin, cb) {
-    if (!origin) return cb(null, true); // server-to-server or curl
-    if (allowed.length === 0) return cb(null, true);
-    if (allowed.includes(origin)) return cb(null, true);
-    return cb(new Error("CORS blocked: " + origin));
-  }
-}));
+// WARNING: TEMPORARILY ALLOWS ALL CROSS-ORIGIN REQUESTS FOR DEBUGGING. 
+// MUST BE REPLACED WITH SECURE LOGIC BEFORE PRODUCTION.
+app.use(cors());
 
 // Webhook MUST use raw body. Mount before json middleware.
 app.post("/webhook", express.raw({ type: "application/json" }), async (req, res) => {
