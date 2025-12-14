@@ -51,17 +51,17 @@
   },
   "the-laurel-varsity": {
     "name": "The Laurel Varsity",
-    "price": 0,
+    "price": 35000,
     "currency": "usd"
   },
   "the-bridgeview-varsity": {
     "name": "The Bridgeview Varsity",
-    "price": 0,
+    "price": 35000,
     "currency": "usd"
   },
   "the-astor-varsity": {
     "name": "The Astor Varsity",
-    "price": 0,
+    "price": 35000,
     "currency": "usd"
   }
 }
