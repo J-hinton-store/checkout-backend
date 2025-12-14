@@ -3,19 +3,19 @@
  * - Creates Checkout Sessions using server-side prices (prevents tampering)
  * - Shipping address collection (US only)
  * - Shipping options:
- *    Express (1–2 Days) $29.99
- *    Standard (2–5 Days) $12.95
- *    Free shipping when subtotal >= $150.00
+ * Express (1–2 Days) $29.99
+ * Standard (2–5 Days) $12.95
+ * Free shipping when subtotal >= $150.00
  * - Webhook verifies payment and sends order email (Resend) to customer + internal
  *
  * ENV (Render):
- *  STRIPE_SECRET_KEY=sk_...
- *  SITE_URL=https://j-hinton.com
- *  ALLOWED_ORIGINS=https://j-hinton.com (comma-separated allowed origins OK)
- *  STRIPE_WEBHOOK_SECRET=whsec_... (set after you create webhook endpoint in Stripe)
- *  RESEND_API_KEY=re_... (optional but recommended)
- *  FROM_EMAIL=orders@j-hinton.com
- *  INTERNAL_ORDER_EMAIL=ordersupport@j-hinton.com
+ * STRIPE_SECRET_KEY=sk_...
+ * SITE_URL=https://j-hinton.com
+ * ALLOWED_ORIGINS=https://j-hinton.com (comma-separated allowed origins OK)
+ * STRIPE_WEBHOOK_SECRET=whsec_... (set after you create webhook endpoint in Stripe)
+ * RESEND_API_KEY=re_... (optional but recommended)
+ * FROM_EMAIL=orders@j-hinton.com
+ * INTERNAL_ORDER_EMAIL=ordersupport@j-hinton.com
  */
 require("dotenv").config();
 const fs = require("fs");
@@ -48,9 +48,18 @@ const allowed = (process.env.ALLOWED_ORIGINS || SITE_URL || "")
   .map(s => s.trim())
   .filter(Boolean);
 
-// WARNING: TEMPORARILY ALLOWS ALL CROSS-ORIGIN REQUESTS FOR DEBUGGING. 
-// MUST BE REPLACED WITH SECURE LOGIC BEFORE PRODUCTION.
-app.use(cors());
+// ✅ PRODUCTION CORS: RE-ENABLING SECURE LOGIC
+app.use(cors({
+  origin: function(origin, cb) {
+    if (!origin) return cb(null, true);
+    // Allowing the local development environment is often necessary
+    if (origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1')) {
+        return cb(null, true);
+    }
+    if (allowed.includes(origin)) return cb(null, true);
+    return cb(new Error("CORS blocked: " + origin));
+  }
+}));
 
 // Webhook MUST use raw body. Mount before json middleware.
 app.post("/webhook", express.raw({ type: "application/json" }), async (req, res) => {
@@ -104,6 +113,17 @@ function normalizeSku(rawSku) {
   if (!rawSku) return "";
   return String(rawSku).split("--")[0].trim();
 }
+
+// ✅ NEW HELPER: Extract the size/variant from the full SKU
+function extractVariant(rawSku) {
+  const parts = String(rawSku || "").split('--');
+  if (parts.length > 1) {
+    // Join the rest of the parts and convert to uppercase for display
+    return parts.slice(1).join('--').trim().toUpperCase(); 
+  }
+  return '';
+}
+
 
 function computeSubtotalCents(items) {
   let subtotal = 0;
@@ -174,6 +194,7 @@ app.post("/create-checkout-session", async (req, res) => {
     for (const it of items) {
       const rawSku = String(it.sku || "").trim();
       const baseSku = normalizeSku(rawSku);
+      const variant = extractVariant(rawSku); // ✅ NEW: Extract variant
       const qty = Math.max(1, Number(it.qty) || 1);
 
       const p = PRODUCTS[baseSku];
@@ -182,8 +203,7 @@ app.post("/create-checkout-session", async (req, res) => {
       }
 
       // pass size info (if sku includes --SIZE)
-      const size = rawSku.includes("--") ? rawSku.split("--")[1] : "";
-      if (size) metadata[`size_${baseSku}`] = size;
+      if (variant) metadata[`size_${baseSku}`] = variant;
 
       line_items.push({
         price_data: {
@@ -191,7 +211,10 @@ app.post("/create-checkout-session", async (req, res) => {
           unit_amount: Number(p.price),
           product_data: {
             name: p.name || baseSku,
-            metadata: { sku: baseSku, ...(size ? { size } : {}) }
+            // ✅ CRITICAL FIX: Append the variant to the product description
+            description: variant ? `Size: ${variant}` : p.description || 'Apparel',
+            images: p.image ? [p.image] : [],
+            metadata: { sku: baseSku, ...(variant ? { variant } : {}) } // changed 'size' to 'variant' for consistency
           }
         },
         quantity: qty
@@ -249,8 +272,9 @@ async function sendOrderEmails(session) {
     const name = li.description || li.price?.product?.name || "Item";
     const qty = li.quantity || 1;
     const unit = li.price?.unit_amount || 0;
-    const size = li.price?.product?.metadata?.size || li.price?.product?.metadata?.Size || "";
-    lines.push(`${qty} × ${name}${size ? " (Size " + size + ")" : ""} — $${(unit/100).toFixed(2)}`);
+    // Note: The metadata on the session itself might be the easiest way to get the size for the email
+    const variant = li.price?.product?.description?.startsWith('Size:') ? li.price.product.description.replace('Size: ', '') : '';
+    lines.push(`${qty} × ${name}${variant ? " (" + variant + ")" : ""} — $${(unit/100).toFixed(2)}`);
   }
 
   const amountTotal = session.amount_total ? `$${(session.amount_total/100).toFixed(2)}` : "—";
