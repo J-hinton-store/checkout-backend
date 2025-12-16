@@ -103,6 +103,94 @@ app.use(express.json({ limit: "1mb" }));
 
 app.get("/health", (req, res) => {
   res.json({ ok: true });
+
+// ===============================
+// Klaviyo Subscribe (Email + optional SMS)
+// ENV:
+//  KLAVIYO_PRIVATE_KEY=pk_...
+//  KLAVIYO_LIST_ID=LIST_ID
+// ===============================
+app.post("/api/klaviyo/subscribe", async (req, res) => {
+  try {
+    const {
+      email,
+      phone,
+      first_name,
+      last_name,
+      marketing_texts,
+      marketing_emails,
+      consent
+    } = req.body || {};
+
+    if (!email) return res.status(400).json({ ok: false, error: "Missing email" });
+    if (!consent) return res.status(400).json({ ok: false, error: "Consent required" });
+
+    const KLAVIYO_PRIVATE_KEY = process.env.KLAVIYO_PRIVATE_KEY;
+    const KLAVIYO_LIST_ID = process.env.KLAVIYO_LIST_ID;
+
+    if (!KLAVIYO_PRIVATE_KEY || !KLAVIYO_LIST_ID) {
+      return res.status(500).json({ ok: false, error: "Klaviyo env vars missing" });
+    }
+
+    const cleanPhone = phone ? String(phone).replace(/\D/g, "") : "";
+    const phone_number = cleanPhone ? `+1${cleanPhone}` : undefined;
+
+    const payload = {
+      data: {
+        type: "profile-subscription-bulk-create-job",
+        attributes: {
+          list_id: KLAVIYO_LIST_ID,
+          subscriptions: {
+            email: {
+              marketing: { consent: "SUBSCRIBED" }
+            },
+            ...(marketing_texts && phone_number
+              ? { sms: { marketing: { consent: "SUBSCRIBED" } } }
+              : {})
+          },
+          profiles: [
+            {
+              type: "profile",
+              attributes: {
+                email,
+                first_name,
+                last_name,
+                ...(phone_number ? { phone_number } : {}),
+                properties: {
+                  marketing_emails: !!marketing_emails,
+                  marketing_texts: !!marketing_texts,
+                  source: "jhinton-home-join"
+                }
+              }
+            }
+          ]
+        }
+      }
+    };
+
+    const resp = await fetch("https://a.klaviyo.com/api/profile-subscription-bulk-create-jobs/", {
+      method: "POST",
+      headers: {
+        "Authorization": `Klaviyo-API-Key ${KLAVIYO_PRIVATE_KEY}`,
+        "Content-Type": "application/json",
+        "revision": "2024-10-15"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await resp.json().catch(() => ({}));
+
+    if (!resp.ok) {
+      return res.status(400).json({ ok: false, error: "Klaviyo error", details: data });
+    }
+
+    return res.json({ ok: true });
+  } catch (e) {
+    console.error("klaviyo subscribe error:", e);
+    return res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
 });
 
 const PRODUCTS_PATH = path.join(__dirname, "products.json");
@@ -228,6 +316,12 @@ app.post("/create-checkout-session", async (req, res) => {
       payment_method_types: ["card"],
       line_items,
 
+      // ✅ Stripe Automatic Tax
+      automatic_tax: { enabled: true },
+
+      // ✅ Collect billing address for tax calculation
+      billing_address_collection: "required",
+
       // Shipping: collect address (US only) + options
       shipping_address_collection: { allowed_countries: ["US"] },
       shipping_options: buildShippingOptions(subtotal),
@@ -237,7 +331,7 @@ app.post("/create-checkout-session", async (req, res) => {
 
       // Success / Cancel
       success_url: `${SITE_URL.replace(/\/$/, "")}/success.html?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${SITE_URL.replace(/\/$/, "")}/cart.html`,
+      cancel_url: `${SITE_URL.replace(/\/$/, "")}/cancel.html`,
 
       // Metadata for internal order email
       metadata: {
